@@ -37,6 +37,18 @@ public class UserManager : MonoBehaviour
         return instance.user.id;
     }
 
+    public static bool TryGetUserID(out string userId)
+    {
+        userId = null;
+        if (instance == null || instance.user == null)
+        {
+            return false;
+        }
+
+        userId = instance.user.id;
+        return !string.IsNullOrEmpty(userId);
+    }
+
     public static Color GetUserColor()
     {
         if (ColorUtility.TryParseHtmlString(instance.properties.colorHex, out Color color))

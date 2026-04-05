@@ -7,7 +7,16 @@ public class LocalPlayerBootstrapper : MonoBehaviour
 
     private void Start()
     {
-        string playerId = UserManager.GetUserID();
+        string playerId;
+        if (!UserManager.TryGetUserID(out playerId))
+        {
+            playerId = PlayerPrefs.GetString("BlackjackLocalPlayerId", string.Empty);
+            if (string.IsNullOrEmpty(playerId))
+            {
+                playerId = System.Guid.NewGuid().ToString();
+                PlayerPrefs.SetString("BlackjackLocalPlayerId", playerId);
+            }
+        }
         if (localPlayerId != null)
         {
             localPlayerId.SetValue(playerId);

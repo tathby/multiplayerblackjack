@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93c80303843af0f43ba22e27eb286aa3, type: 3}
+  m_Name: BlackjackGameStateSO
+  m_EditorClassIdentifier: 
+  data:
+    Phase: 0
+    Players: []
+    DealerHand:
+      cards: []
+    Deck:
+      cards: []
+    DealerHoleCardHidden: 1
+    ActivePlayerIndex: 0
+    MinBet: 10
+    MaxBet: 1000

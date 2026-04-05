@@ -201,6 +201,18 @@ public class BCConfig : MonoBehaviour
         return instance.ownerId;
     }
 
+    public static bool TryGetCurrentHostID(out string hostId)
+    {
+        hostId = null;
+        if (instance == null)
+        {
+            return false;
+        }
+
+        hostId = instance.ownerId;
+        return !string.IsNullOrEmpty(hostId);
+    }
+
     public static void SaveUserProperty(string key, object val)
     {
         if (instance == null || instance._bc == null)

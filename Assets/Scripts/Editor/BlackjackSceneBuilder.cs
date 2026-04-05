@@ -25,11 +25,55 @@ public static class BlackjackSceneBuilder
         Scene scene = OpenOrCreateGameScene();
         PlaceSystemsPrefab(scene, systemsPrefab);
         PlaceUiPrefab(scene, uiPrefab);
+        AutoWireGameEventListeners();
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
 
         Debug.Log("Blackjack starter scene and prefabs created.");
+    }
+
+    [MenuItem("Tools/Blackjack/Auto Wire GameEventListeners")]
+    public static void AutoWireGameEventListeners()
+    {
+        GameObject systemsRoot = GameObject.Find("BlackjackSystems");
+        if (systemsRoot == null)
+        {
+            Debug.LogWarning("BlackjackSystems not found in scene. Open Game.unity or run Create Starter Scene And Prefabs.");
+            return;
+        }
+
+        Transform wiringRoot = systemsRoot.transform.Find("GameEventWiring");
+        if (wiringRoot == null)
+        {
+            GameObject wiringObj = new GameObject("GameEventWiring");
+            wiringObj.transform.SetParent(systemsRoot.transform);
+            wiringRoot = wiringObj.transform;
+        }
+
+        EnsureListenerCount(wiringRoot, 5);
+
+        DealController deal = systemsRoot.GetComponent<DealController>();
+        DealerTurnController dealer = systemsRoot.GetComponent<DealerTurnController>();
+        PayoutController payout = systemsRoot.GetComponent<PayoutController>();
+        HostStateSyncEmitter sync = systemsRoot.GetComponent<HostStateSyncEmitter>();
+        RoundResetController reset = systemsRoot.GetComponent<RoundResetController>();
+
+        GameEvent allBetsPlaced = FindGameEvent("AllBetsPlaced");
+        GameEvent allPlayersActed = FindGameEvent("AllPlayersActed");
+        GameEvent dealerTurnEnded = FindGameEvent("DealerTurnEnded");
+        GameEvent gameStateChanged = FindGameEvent("GameStateChanged");
+        GameEvent roundResetRequested = FindGameEvent("RoundResetRequested");
+
+        GameEventListener[] listeners = wiringRoot.GetComponents<GameEventListener>();
+        WireListener(listeners[0], allBetsPlaced, deal, nameof(DealController.BeginDeal));
+        WireListener(listeners[1], allPlayersActed, dealer, nameof(DealerTurnController.PlayDealerTurn));
+        WireListener(listeners[2], dealerTurnEnded, payout, nameof(PayoutController.ResolveRound));
+        WireListener(listeners[3], gameStateChanged, sync, nameof(HostStateSyncEmitter.EmitSync));
+        WireListener(listeners[4], roundResetRequested, reset, nameof(RoundResetController.StartNewRound));
+
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        Debug.Log("GameEventListeners auto-wired.");
     }
 
     private static void EnsureFolder(string path)
@@ -327,6 +371,69 @@ public static class BlackjackSceneBuilder
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
         AssetDatabase.SaveAssets();
         return prefab;
+    }
+
+    private static void EnsureListenerCount(Transform wiringRoot, int count)
+    {
+        GameEventListener[] existing = wiringRoot.GetComponents<GameEventListener>();
+        for (int i = existing.Length; i < count; i++)
+        {
+            wiringRoot.gameObject.AddComponent<GameEventListener>();
+        }
+    }
+
+    private static GameEvent FindGameEvent(string assetName)
+    {
+        string[] guids = AssetDatabase.FindAssets($"{assetName} t:GameEvent");
+        if (guids.Length == 0)
+        {
+            Debug.LogWarning($"GameEvent asset not found: {assetName}");
+            return null;
+        }
+
+        string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+        return AssetDatabase.LoadAssetAtPath<GameEvent>(path);
+    }
+
+    private static void WireListener(GameEventListener listener, GameEvent gameEvent, Object target, string methodName)
+    {
+        if (listener == null)
+        {
+            return;
+        }
+
+        var eventField = typeof(GameEventListener).GetField("gameEvent", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var responseField = typeof(GameEventListener).GetField("response", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        if (eventField != null)
+        {
+            eventField.SetValue(listener, gameEvent);
+        }
+
+        UnityEngine.Events.UnityEvent response = responseField != null
+            ? responseField.GetValue(listener) as UnityEngine.Events.UnityEvent
+            : null;
+
+        if (response == null)
+        {
+            response = new UnityEngine.Events.UnityEvent();
+            responseField?.SetValue(listener, response);
+        }
+        else
+        {
+            int count = response.GetPersistentEventCount();
+            for (int i = count - 1; i >= 0; i--)
+            {
+                UnityEventTools.RemovePersistentListener(response, i);
+            }
+        }
+
+        if (target != null && !string.IsNullOrEmpty(methodName))
+        {
+            UnityEventTools.AddPersistentListener(response, (UnityEngine.Events.UnityAction)System.Delegate.CreateDelegate(typeof(UnityEngine.Events.UnityAction), target, methodName));
+        }
+
+        EditorUtility.SetDirty(listener);
     }
 }
 #endif
