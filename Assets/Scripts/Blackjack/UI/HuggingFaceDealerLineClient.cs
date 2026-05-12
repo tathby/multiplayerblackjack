@@ -5,7 +5,7 @@ using UnityEngine.Networking;
 
 public static class HuggingFaceDealerLineClient
 {
-    public const string Endpoint = "https://api-inference.huggingface.co/models/google/flan-t5-large";
+    private const string Endpoint = "https://api-inference.huggingface.co/models/google/flan-t5-large";
 
     [Serializable]
     private struct PromptRequest
