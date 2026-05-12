@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 public static class HuggingFaceDealerLineClient
 {
     public const string DefaultEndpoint = "https://router.huggingface.co/v1/chat/completions";
-    public const string DefaultModel = "google/flan-t5-large";
+    public const string DefaultModel = "openai/gpt-oss-120b:fastest";
 
     [Serializable]
     private struct ChatRequest
