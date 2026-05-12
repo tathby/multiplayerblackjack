@@ -12,13 +12,20 @@ public static class HuggingFaceDealerLineClient
     private struct ChatRequest
     {
         public string model;
-        public ChatMessage[] messages;
+        public ChatRequestMessage[] messages;
         public int max_tokens;
         public float temperature;
     }
 
     [Serializable]
-    private struct ChatMessage
+    private struct ChatRequestMessage
+    {
+        public string role;
+        public string content;
+    }
+
+    [Serializable]
+    private struct ChatResponseMessage
     {
         public string role;
         public string content;
@@ -35,7 +42,7 @@ public static class HuggingFaceDealerLineClient
     private class ChatChoice
     {
         public string finish_reason;
-        public ChatMessage message;
+        public ChatResponseMessage message;
     }
 
     [Serializable]
@@ -107,8 +114,8 @@ public static class HuggingFaceDealerLineClient
             temperature = 0.9f,
             messages = new[]
             {
-                new ChatMessage { role = "system", content = "You are a sarcastic cyberpunk blackjack dealer. Give only the spoken dealer line." },
-                new ChatMessage { role = "user", content = prompt }
+                new ChatRequestMessage { role = "system", content = "You are a sarcastic cyberpunk blackjack dealer. Give only the spoken dealer line." },
+                new ChatRequestMessage { role = "user", content = prompt }
             }
         };
     }
