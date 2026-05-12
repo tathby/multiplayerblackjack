@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 public static class HuggingFaceDealerLineClient
 {
     public const string DefaultEndpoint = "https://router.huggingface.co/v1/chat/completions";
-    public const string DefaultModel = "Qwen/Qwen2.5-0.5B-Instruct";
+    public const string DefaultModel = "google/flan-t5-large";
 
     [Serializable]
     private struct ChatRequest
