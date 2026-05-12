@@ -78,3 +78,4 @@ Assets/NetCodeGenerated*
 .idea/
 .DS_Store
 RiderScriptEditorPersistedState.asset
+Assets/Secrets/APIKey.txt
