@@ -6,13 +6,15 @@ public static class DealerApiKeyLoader
 {
     private const string HuggingFaceTokenVariable = "HUGGINGFACE_API_KEY";
     private const string ShortHuggingFaceTokenVariable = "HF_API_KEY";
+    private const string OfficialHuggingFaceTokenVariable = "HF_TOKEN";
 
     public static bool TryLoad(string filePath, out string apiKey, out string source)
     {
         apiKey = string.Empty;
         source = string.Empty;
 
-        if (TryLoadFromEnvironment(HuggingFaceTokenVariable, out apiKey, out source) ||
+        if (TryLoadFromEnvironment(OfficialHuggingFaceTokenVariable, out apiKey, out source) ||
+            TryLoadFromEnvironment(HuggingFaceTokenVariable, out apiKey, out source) ||
             TryLoadFromEnvironment(ShortHuggingFaceTokenVariable, out apiKey, out source))
         {
             return true;

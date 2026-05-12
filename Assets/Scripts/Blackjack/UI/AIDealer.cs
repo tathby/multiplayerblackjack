@@ -10,6 +10,8 @@ public class AIDealer : MonoBehaviour
     [SerializeField] private BlackjackGameStateSO gameState;
     [SerializeField] private StringVariable localPlayerId;
     [SerializeField] private string apiKeyFilePath = "Assets/Secrets/api_key.txt";
+    [SerializeField] private string endpoint = HuggingFaceDealerLineClient.DefaultEndpoint;
+    [SerializeField] private string model = HuggingFaceDealerLineClient.DefaultModel;
     [SerializeField] private bool logDiagnostics = true;
 
     private string apiKey;
@@ -116,9 +118,9 @@ public class AIDealer : MonoBehaviour
 
     private IEnumerator SendPrompt(string action, int total)
     {
-        using (UnityWebRequest request = HuggingFaceDealerLineClient.CreateRequest(apiKey, action, total))
+        using (UnityWebRequest request = HuggingFaceDealerLineClient.CreateRequest(endpoint, apiKey, model, action, total))
         {
-            LogDiagnostic($"AI Dealer sending request to {HuggingFaceDealerLineClient.Endpoint}.");
+            LogDiagnostic($"AI Dealer sending request to {endpoint} using model {model}.");
             yield return request.SendWebRequest();
             LogDiagnostic($"AI Dealer request completed: result={request.result}, status={request.responseCode}.");
 
