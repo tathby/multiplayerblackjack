@@ -193,6 +193,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dealerText: {fileID: 1880310502}
+  actionRequested: {fileID: 11400000, guid: 9d0e6bd888ff6ed4fa720bcc43f6e27a, type: 2}
+  gameState: {fileID: 11400000, guid: 5d2cdba1c890d5346889627804d30a6a, type: 2}
+  localPlayerId: {fileID: 11400000, guid: 53df7bb960a3a7748bfe8fa846ca747b, type: 2}
+  apiKeyFilePath: Assets/Secrets/api_key.txt
+  endpoint: https://router.huggingface.co/v1/chat/completions
+  model: Qwen/Qwen2.5-0.5B-Instruct
+  logDiagnostics: 1
 --- !u!4 &369656084
 Transform:
   m_ObjectHideFlags: 0
