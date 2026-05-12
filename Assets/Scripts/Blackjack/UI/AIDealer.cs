@@ -1,5 +1,4 @@
 using System.Collections;
-using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -11,32 +10,25 @@ public class AIDealer : MonoBehaviour
     [SerializeField] private BlackjackGameStateSO gameState;
     [SerializeField] private StringVariable localPlayerId;
     [SerializeField] private string apiKeyFilePath = "Assets/Secrets/api_key.txt";
+    [SerializeField] private bool logDiagnostics = true;
 
     private string apiKey;
+    private string apiKeySource;
     private Coroutine activeRequest;
 
     private void Awake()
     {
-        if (File.Exists(apiKeyFilePath))
-        {
-            apiKey = File.ReadAllText(apiKeyFilePath).Trim();
-        }
+        ReloadApiKey();
     }
 
     private void OnEnable()
     {
-        if (actionRequested != null)
-        {
-            actionRequested.OnEventRaised += OnPlayerActionRequested;
-        }
+        if (actionRequested != null) actionRequested.OnEventRaised += OnPlayerActionRequested;
     }
 
     private void OnDisable()
     {
-        if (actionRequested != null)
-        {
-            actionRequested.OnEventRaised -= OnPlayerActionRequested;
-        }
+        if (actionRequested != null) actionRequested.OnEventRaised -= OnPlayerActionRequested;
     }
 
     public void GenerateDealerLine(string playerAction, int playerTotal)
@@ -46,14 +38,41 @@ public class AIDealer : MonoBehaviour
             StopCoroutine(activeRequest);
         }
 
+        activeRequest = StartCoroutine(GenerateDealerLineRoutine(playerAction, playerTotal));
+    }
+
+    [ContextMenu("Test Dealer API Call")]
+    public void TestDealerApiCall()
+    {
+        GenerateDealerLine("hit", 16);
+    }
+
+    [ContextMenu("Reload Dealer API Key")]
+    public void ReloadApiKey()
+    {
+        bool loaded = DealerApiKeyLoader.TryLoad(apiKeyFilePath, out apiKey, out apiKeySource);
+        if (logDiagnostics)
+        {
+            string message = loaded ? $"AI Dealer API key loaded from {apiKeySource}." : $"AI Dealer API key missing. Checked {apiKeySource}.";
+            Debug.Log(message, this);
+        }
+    }
+
+    private IEnumerator GenerateDealerLineRoutine(string action, int total)
+    {
         SetDealerText("Dealer is thinking...");
+        yield return null;
+
         if (string.IsNullOrWhiteSpace(apiKey))
         {
-            SetDealerText(HuggingFaceDealerLineClient.GetFallbackDealerLine(playerAction, playerTotal));
-            return;
+            LogDiagnostic("AI Dealer is using fallback text because no API key is loaded; no web request was sent.");
+            SetDealerText(HuggingFaceDealerLineClient.GetFallbackDealerLine(action, total));
+            activeRequest = null;
+            yield break;
         }
 
-        activeRequest = StartCoroutine(SendPrompt(playerAction, playerTotal));
+        yield return SendPrompt(action, total);
+        activeRequest = null;
     }
 
     private void OnPlayerActionRequested(PlayerActionMessage message)
@@ -63,7 +82,10 @@ public class AIDealer : MonoBehaviour
             return;
         }
 
-        GenerateDealerLine(GetActionPromptText(message.Action), GetPlayerTotal(message.PlayerId));
+        string action = GetActionPromptText(message.Action);
+        int total = GetPlayerTotal(message.PlayerId);
+        LogDiagnostic($"AI Dealer received local action '{action}' with total {total}.");
+        GenerateDealerLine(action, total);
     }
 
     private bool IsLocalPlayerAction(PlayerActionMessage message)
@@ -96,7 +118,10 @@ public class AIDealer : MonoBehaviour
     {
         using (UnityWebRequest request = HuggingFaceDealerLineClient.CreateRequest(apiKey, action, total))
         {
+            LogDiagnostic($"AI Dealer sending request to {HuggingFaceDealerLineClient.Endpoint}.");
             yield return request.SendWebRequest();
+            LogDiagnostic($"AI Dealer request completed: result={request.result}, status={request.responseCode}.");
+
             if (request.result == UnityWebRequest.Result.Success)
             {
                 SetDealerText(HuggingFaceDealerLineClient.ParseDealerLine(request.downloadHandler.text));
@@ -104,18 +129,18 @@ public class AIDealer : MonoBehaviour
             else
             {
                 SetDealerText(HuggingFaceDealerLineClient.GetFallbackDealerLine(action, total));
-                Debug.LogWarning($"AI Dealer unavailable: {request.error}");
+                Debug.LogWarning($"AI Dealer unavailable: {request.error}. Body: {request.downloadHandler.text}", this);
             }
         }
-
-        activeRequest = null;
     }
 
     private void SetDealerText(string text)
     {
-        if (dealerText != null)
-        {
-            dealerText.text = text;
-        }
+        if (dealerText != null) dealerText.text = text;
+    }
+
+    private void LogDiagnostic(string message)
+    {
+        if (logDiagnostics) Debug.Log(message, this);
     }
 }
