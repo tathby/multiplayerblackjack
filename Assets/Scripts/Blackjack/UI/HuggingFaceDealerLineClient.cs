@@ -22,6 +22,7 @@ public static class HuggingFaceDealerLineClient
     {
         public string role;
         public string content;
+        public string reasoning;
     }
 
     [Serializable]
@@ -33,6 +34,7 @@ public static class HuggingFaceDealerLineClient
     [Serializable]
     private class ChatChoice
     {
+        public string finish_reason;
         public ChatMessage message;
     }
 
@@ -62,21 +64,26 @@ public static class HuggingFaceDealerLineClient
         return request;
     }
 
-    public static string ParseDealerLine(string response)
+    public static string ParseDealerLine(string response, string action, int total)
     {
-        if (string.IsNullOrWhiteSpace(response)) return "The dealer says nothing. Somehow, it's worse.";
+        if (string.IsNullOrWhiteSpace(response)) return GetFallbackDealerLine(action, total);
 
         string trimmed = response.Trim();
-        if (trimmed.StartsWith("[")) return ParseLegacyResponse(trimmed);
+        if (trimmed.StartsWith("[")) return ParseLegacyResponse(trimmed, action, total);
+        if (!trimmed.StartsWith("{")) return trimmed;
 
         ChatResponse parsed = JsonUtility.FromJson<ChatResponse>(trimmed);
         if (parsed == null || parsed.choices == null || parsed.choices.Length == 0)
         {
-            return trimmed;
+            return GetFallbackDealerLine(action, total);
         }
 
-        string content = parsed.choices[0].message.content;
-        return string.IsNullOrWhiteSpace(content) ? trimmed : content.Trim();
+        ChatChoice choice = parsed.choices[0];
+        string content = choice.message.content;
+        if (!string.IsNullOrWhiteSpace(content)) return CleanDealerLine(content);
+
+        Debug.LogWarning($"AI Dealer response did not include final content. finish_reason={choice.finish_reason}. Using fallback line.");
+        return GetFallbackDealerLine(action, total);
     }
 
     public static string GetFallbackDealerLine(string action, int total)
@@ -92,25 +99,31 @@ public static class HuggingFaceDealerLineClient
 
     private static ChatRequest CreateChatRequest(string model, string action, int total)
     {
-        string prompt = $"The player chose to {action} with a blackjack total of {total}. Respond with one short sentence.";
+        string prompt = $"The player chose to {action} with a blackjack total of {total}. Reply with exactly one short dealer quote. Do not explain.";
         return new ChatRequest
         {
             model = string.IsNullOrWhiteSpace(model) ? DefaultModel : model,
-            max_tokens = 40,
+            max_tokens = 160,
             temperature = 0.9f,
             messages = new[]
             {
-                new ChatMessage { role = "system", content = "You are a sarcastic cyberpunk blackjack dealer." },
+                new ChatMessage { role = "system", content = "You are a sarcastic cyberpunk blackjack dealer. Give only the spoken dealer line." },
                 new ChatMessage { role = "user", content = prompt }
             }
         };
     }
 
-    private static string ParseLegacyResponse(string trimmed)
+    private static string ParseLegacyResponse(string trimmed, string action, int total)
     {
         LegacyTextResponseList parsed = JsonUtility.FromJson<LegacyTextResponseList>($"{{\"items\":{trimmed}}}");
-        if (parsed == null || parsed.items == null || parsed.items.Length == 0) return trimmed;
+        if (parsed == null || parsed.items == null || parsed.items.Length == 0) return GetFallbackDealerLine(action, total);
         string generatedText = parsed.items[0].generated_text;
-        return string.IsNullOrWhiteSpace(generatedText) ? trimmed : generatedText.Trim();
+        return string.IsNullOrWhiteSpace(generatedText) ? GetFallbackDealerLine(action, total) : CleanDealerLine(generatedText);
+    }
+
+    private static string CleanDealerLine(string line)
+    {
+        string cleaned = line.Trim();
+        return cleaned.Length > 160 ? cleaned.Substring(0, 160).TrimEnd() : cleaned;
     }
 }

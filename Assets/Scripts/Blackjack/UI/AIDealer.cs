@@ -126,7 +126,7 @@ public class AIDealer : MonoBehaviour
 
             if (request.result == UnityWebRequest.Result.Success)
             {
-                SetDealerText(HuggingFaceDealerLineClient.ParseDealerLine(request.downloadHandler.text));
+                SetDealerText(HuggingFaceDealerLineClient.ParseDealerLine(request.downloadHandler.text, action, total));
             }
             else
             {
