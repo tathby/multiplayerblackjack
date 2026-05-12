@@ -198,7 +198,7 @@ MonoBehaviour:
   localPlayerId: {fileID: 11400000, guid: 53df7bb960a3a7748bfe8fa846ca747b, type: 2}
   apiKeyFilePath: Assets/Secrets/api_key.txt
   endpoint: https://router.huggingface.co/v1/chat/completions
-  model: openai/gpt-oss-120b:fastest
+  model: meta-llama/Llama-3.1-8B-Instruct:fireworks-ai
   logDiagnostics: 1
 --- !u!4 &369656084
 Transform:

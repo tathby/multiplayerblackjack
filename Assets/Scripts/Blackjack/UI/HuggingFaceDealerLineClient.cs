@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 public static class HuggingFaceDealerLineClient
 {
     public const string DefaultEndpoint = "https://router.huggingface.co/v1/chat/completions";
-    public const string DefaultModel = "openai/gpt-oss-120b:fastest";
+    public const string DefaultModel = "meta-llama/Llama-3.1-8B-Instruct:fireworks-ai";
 
     [Serializable]
     private struct ChatRequest
@@ -15,6 +15,7 @@ public static class HuggingFaceDealerLineClient
         public ChatRequestMessage[] messages;
         public int max_tokens;
         public float temperature;
+        public bool stream;
     }
 
     [Serializable]
@@ -110,8 +111,9 @@ public static class HuggingFaceDealerLineClient
         return new ChatRequest
         {
             model = string.IsNullOrWhiteSpace(model) ? DefaultModel : model,
-            max_tokens = 160,
-            temperature = 0.9f,
+            max_tokens = 80,
+            temperature = 0.8f,
+            stream = false,
             messages = new[]
             {
                 new ChatRequestMessage { role = "system", content = "You are a sarcastic cyberpunk blackjack dealer. Give only the spoken dealer line." },
